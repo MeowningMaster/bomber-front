@@ -1,18 +1,27 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+
   import Card from "$components/Card.svelte";
-  import RoomCard from "$components/RoomCard.svelte";
-  import { setupSocket } from "$lib/socket";
+  import TableCard from "$components/TableCard.svelte";
+  import { actions } from "$lib/actions";
+  import { getSocketInstance } from "$lib/socket";
   import { onMount } from "svelte";
+  import type { Table } from "$lib/table";
 
-  onMount(function () {
-    setupSocket();
+  function openTable(roomId: string) {
+    goto(`/table/${roomId}`, { replaceState: true });
+  }
+
+  let tables: Array<Table> = [];
+
+  onMount(async function () {
+    const socket = await getSocketInstance();
+    const response = (await socket.sendInstant(actions.getTableList)) as {
+      tables: Array<Table>;
+    };
+    tables = response.tables;
+    console.log("tables", tables);
   });
-
-  type Room = {
-    code: string;
-  };
-
-  const rooms: Room[] = [{ code: "NGI8X" }];
 </script>
 
 <svelte:head>
@@ -25,27 +34,29 @@
 </svelte:head>
 
 <div class="wrapper">
-  <div class="header">Header</div>
+  <div class="header">
+    <img src="images/header.svg" alt="header" />
+  </div>
   <div class="content">
     <div class="row">
-      <Card title={"Join room"}>
+      <Card title={"Приєднатися"}>
         <form>
-          <label>Code <input id="join-code" /></label>
-          <input type="submit" value="Join" />
+          <label>Код кімнати <input id="join-code" /></label>
+          <input type="submit" value="Приєднатися" />
         </form>
       </Card>
-      <Card title={"Create room"}>
+      <Card title={"Створити кімнату"}>
         <form>
-          <label>Name <input id="create-name" /></label>
-          <label>Private <input id="create-private" type="checkbox" /></label>
-          <input type="submit" value="Create" />
+          <label>Назва <input id="create-name" /></label>
+          <label>Приватна <input id="create-private" type="checkbox" /></label>
+          <input type="submit" value="Створити" />
         </form>
       </Card>
     </div>
 
     <div class="rooms-list">
-      {#each rooms as { code }}
-        <RoomCard {code} />
+      {#each tables as table}
+        <TableCard {table} />
       {/each}
     </div>
   </div>
@@ -82,7 +93,7 @@
   }
 
   .wrapper {
-    background: #e9ad76;
+    background: #ffb17a;
     max-width: 800px;
     min-height: 100vh;
     margin: 0 auto;

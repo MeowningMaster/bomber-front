@@ -3,6 +3,4 @@ node_modules
 /build
 /.svelte-kit
 /package
-.vercel_build_output
-.vercel
 .pnpm-debug.log

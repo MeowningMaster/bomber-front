@@ -1,15 +1,16 @@
 <script lang="ts">
-  export let code = "1XD4SF";
-  export let name = "Room name";
-  export let status = "waiting...";
-  export let playersCount = 7;
+  import type { Table } from "$lib/table";
+
+  export let table: Table;
+  $: status = table.gameInProgress ? "Гра триває" : "Очікування гравців";
+  $: playersCount = table.players.length;
 </script>
 
 <div class="card">
   <div class="status">{status}</div>
   <div class="card-content">
-    <div class="code">{code}</div>
-    <div class="name">{name}</div>
+    <div class="id">{table.id}</div>
+    <div class="name">{table.name}</div>
     <div class="playersCount">{playersCount}</div>
   </div>
 </div>
@@ -17,6 +18,7 @@
 <style>
   .card {
     width: fit-content;
+    min-width: 200px;
     background-color: #f5aa64;
     border: 3px solid #654b33;
     border-radius: 24px;
@@ -24,6 +26,7 @@
     padding: 8px;
     position: relative;
     margin-top: 28px;
+    cursor: pointer;
   }
 
   .status {
@@ -35,6 +38,7 @@
     color: #ffffff;
     padding: 4px 16px;
     border-radius: 16px 16px 0 0;
+    white-space: nowrap;
   }
 
   .card-content {
@@ -54,13 +58,13 @@
     white-space: nowrap;
   }
 
-  .code,
+  .id,
   .playersCount {
     flex-shrink: 1;
     height: 50px;
     text-align: center;
     writing-mode: vertical-rl;
-    rotate: 180deg;
+    rotate: -180deg;
     background-color: #ffcb9b;
     padding: 4px;
     color: #e5af7d;
