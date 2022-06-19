@@ -25,7 +25,7 @@
     box-shadow: 0 4px 4px #00000040;
     padding: 8px;
     position: relative;
-    margin-top: 28px;
+    margin: 28px auto 10px auto;
     cursor: pointer;
   }
 
@@ -64,7 +64,7 @@
     height: 50px;
     text-align: center;
     writing-mode: vertical-rl;
-    rotate: -180deg;
+    rotate: 180deg;
     background-color: #ffcb9b;
     padding: 4px;
     color: #e5af7d;
