@@ -3,24 +3,53 @@
 
   import Card from "$components/Card.svelte";
   import TableCard from "$components/TableCard.svelte";
-  import { actions } from "$lib/actions";
-  import { getSocketInstance } from "$lib/socket";
+  import { getSocketInstance, GameSocket } from "$lib/socket";
   import { onMount } from "svelte";
   import type { Table } from "$lib/table";
+  import { extractFormData } from "$lib/extract-form-data";
+  import { persist, localStorage } from "@macfja/svelte-persistent-store";
+  import { writable } from "svelte/store";
+  import { generatePlayerName } from "$lib/player-name-generator";
+
+  let playerName = writable("");
+
+  let socket: GameSocket;
 
   function openTable(roomId: string) {
-    goto(`/table/${roomId}`, { replaceState: true });
+    goto(`/table/${roomId}`);
+  }
+
+  function createTable(event: SubmitEvent) {
+    if (socket) {
+      const data = extractFormData<{ name: string /*private?: "on"*/ }>(
+        event.target as HTMLFormElement
+      );
+      if (socket.createTable($playerName, data.name)) {
+        openTable("XFSD");
+      } else {
+        alert("Error during table creation");
+      }
+    }
   }
 
   let tables: Array<Table> = [];
 
+  let updateTables = async () => {};
+
   onMount(async function () {
-    const socket = await getSocketInstance();
-    const response = (await socket.sendInstant(actions.getTableList)) as {
-      tables: Array<Table>;
+    playerName = persist(playerName, localStorage(), "playerName");
+    if ($playerName === "") {
+      playerName.set(generatePlayerName());
+    }
+
+    socket = await getSocketInstance();
+
+    updateTables = async () => {
+      tables = await socket.getTableList();
     };
-    tables = response.tables;
-    console.log("tables", tables);
+    // setInterval(updateTables, 5000);
+    // immediate upadate
+    updateTables();
   });
 </script>
 
@@ -39,57 +68,46 @@
   </div>
   <div class="content">
     <div class="row">
-      <Card title={"Приєднатися"}>
+      <!-- <Card title={"Приєднатися"}>
         <form>
-          <label>Код кімнати <input id="join-code" /></label>
+          <input id="join-code" placeholder="Код кімнати" />
           <input type="submit" value="Приєднатися" />
         </form>
+      </Card> -->
+      <Card title={"Нікнейм"}>
+        <input id="player-name" bind:value={$playerName} />
       </Card>
       <Card title={"Створити кімнату"}>
-        <form>
-          <label>Назва <input id="create-name" /></label>
-          <label>Приватна <input id="create-private" type="checkbox" /></label>
+        <form on:submit|preventDefault={(event) => createTable(event)}>
+          <input id="create-name" name="name" placeholder="Назва кімнати" />
+          <!-- <label
+            >Приватна <input
+              id="create-private"
+              type="checkbox"
+              name="private"
+            /></label
+          > -->
           <input type="submit" value="Створити" />
         </form>
       </Card>
     </div>
 
+    <button on:click={() => updateTables()}>Update</button>
     <div class="rooms-list">
       {#each tables as table}
-        <TableCard {table} />
+        <div on:click={() => openTable(table.id)}>
+          <TableCard {table} />
+        </div>
       {/each}
     </div>
   </div>
 </div>
 
 <style>
-  :global(html) {
-    font-size: 10px;
-    font-family: "Roboto", sans-serif;
-    color: #604832;
-  }
-
-  :global(body) {
-    background: #665546;
-    margin: 0;
-    font-size: 1.6em;
-  }
-
-  :global(input) {
-    padding: 4px 8px;
-  }
-
-  :global(input:not([type]), input[type="text"]) {
-    background-color: #fbeee2;
-    border: 1px solid #665546;
-    border-radius: 15px;
-  }
-
-  :global(input[type="button"], input[type="submit"]) {
-    background-color: #bdd337;
-    border: 1px solid #8b9a2b;
-    border-radius: 35px;
-    box-shadow: 0 4px 4px #00000040;
+  input {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 2px auto;
   }
 
   .wrapper {
@@ -106,10 +124,6 @@
     height: 300px;
   }
 
-  form > label {
-    display: block;
-  }
-
   .content {
     background: #f6e4d4;
     border-radius: 35px 35px 0 0;
@@ -120,6 +134,12 @@
   .row {
     display: grid;
     justify-content: space-evenly;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+
+  .rooms-list {
+    display: grid;
+    justify-content: space-between;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   }
 </style>
