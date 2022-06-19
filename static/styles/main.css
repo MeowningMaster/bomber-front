@@ -1,0 +1,30 @@
+html {
+  font-size: 10px;
+  font-family: "Roboto", sans-serif;
+  color: #604832;
+}
+
+body {
+  background: #665546;
+  margin: 0;
+  font-size: 1.6em;
+}
+
+input {
+  padding: 4px 8px;
+}
+
+input:not([type]),
+input[type="text"] {
+  background-color: #fbeee2;
+  border: 1px solid #665546;
+  border-radius: 15px;
+}
+
+input[type="button"],
+input[type="submit"] {
+  background-color: #bdd337;
+  border: 1px solid #8b9a2b;
+  border-radius: 35px;
+  box-shadow: 0 4px 4px #00000040;
+}
