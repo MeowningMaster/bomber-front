@@ -9,12 +9,62 @@ type NeverObject = Record<PropertyKey, never>;
 
 type InstantEventResult<T extends object> = {
   action: Values<typeof instantReplyActions>;
-} & T;
+  data: T;
+};
 
 export declare interface GameEventEmmiter {
   on(
     event: typeof replyActions.playerJoined,
     listener: (data: { player: Player }) => void
+  ): this;
+
+  on(
+    event: typeof replyActions.playerLeft,
+    listener: (data: { player: Player; next_player: Player | null }) => void
+  ): this;
+
+  on(
+    event: typeof replyActions.gameStarted,
+    listener: (data: {
+      syllable: string;
+      required_letters: Array<string>;
+      current_player: Player;
+    }) => void
+  ): this;
+
+  on(
+    event: typeof replyActions.wordUpdated,
+    listener: (data: { updated_word: string }) => void
+  ): this;
+
+  on(
+    event: typeof replyActions.wordAccepted,
+    listener: (data: { new_syllable: string; next_player: Player }) => void
+  ): this;
+
+  on(event: typeof replyActions.wordRejected, listener: () => void): this;
+
+  on(
+    event: typeof replyActions.timeHasRunOut,
+    listener: (data: {
+      new_syllable: string;
+      next_player: Player;
+      new_syllable_complexity: number;
+      possible_word: string;
+    }) => void
+  ): this;
+
+  on(
+    event: typeof replyActions.lifeEarned,
+    listener: (data: {
+      player_id: string;
+      new_required_letters: Array<string>;
+    }) => void
+  ): this;
+
+  on(
+    event: typeof replyActions.tableDeleted,
+    listener: (data: { description: Table }) => void
   ): this;
 }
 
@@ -37,6 +87,7 @@ export class GameSocket {
         console.group(`Action ${eventData.action} emmited`);
         console.log(eventData.data);
         console.groupEnd();
+        return;
       }
 
       // ignore instant reply actions
@@ -60,14 +111,14 @@ export class GameSocket {
       const requestId = nanoid();
 
       function handler(event: MessageEvent<string>) {
-        const eventData: {
+        const eventResult: {
           action: Values<typeof instantReplyActions>;
           data: unknown;
           request_id: string;
         } = JSON.parse(event.data);
-        if (eventData.request_id == requestId) {
+        if (eventResult.request_id == requestId) {
           this.removeEventListener("message", handler);
-          resolve(eventData.data as InstantEventResult<T>);
+          resolve(eventResult as InstantEventResult<T>);
         }
       }
 
@@ -87,7 +138,7 @@ export class GameSocket {
     const response = await this.emitInstantEvent<{ tables: Array<Table> }>(
       requestActions.getTableList
     );
-    return response.tables;
+    return response.data.tables;
   }
 
   async createTable(playerName: string, tableName: string) {
@@ -121,34 +172,15 @@ export class GameSocket {
   confirmWord() {
     this.emitEvent(requestActions.confirmWord);
   }
-}
 
-let socket: GameSocket;
+  async getMyTable() {
+    const response = await this.emitInstantEvent(requestActions.getMyTable);
+    return response.action === instantReplyActions.myTable
+      ? (response.data.table as Table)
+      : undefined;
+  }
 
-export async function getSocketInstance(): Promise<GameSocket> {
-  return new Promise(function (resolve, reject) {
-    if (socket) {
-      resolve(socket);
-    } else {
-      const socket = new GameSocket("ws://localhost:8080");
-
-      socket.raw.addEventListener("open", function () {
-        console.log("Socket opened");
-        resolve(socket);
-      });
-
-      socket.raw.addEventListener("error", function () {
-        console.log("Socket error");
-        reject();
-      });
-
-      socket.raw.addEventListener("close", function () {
-        console.log("Socket closed");
-      });
-
-      socket.raw.addEventListener("message", function (event) {
-        console.debug(`message: ${event.data}`);
-      });
-    }
-  });
+  deleteTable() {
+    this.emitEvent(requestActions.deleteTable);
+  }
 }

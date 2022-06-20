@@ -3,32 +3,45 @@
 
   import Card from "$components/Card.svelte";
   import TableCard from "$components/TableCard.svelte";
-  import { getSocketInstance, GameSocket } from "$lib/socket";
+  import type { GameSocket } from "$lib/socket";
   import { onMount } from "svelte";
   import type { Table } from "$lib/table";
   import { extractFormData } from "$lib/extract-form-data";
   import { persist, localStorage } from "@macfja/svelte-persistent-store";
   import { writable } from "svelte/store";
   import { generatePlayerName } from "$lib/player-name-generator";
-
-  let playerName = writable("");
+  import { getSocketInstance } from "$lib/socket-store";
 
   let socket: GameSocket;
+  let playerName = writable("");
 
-  function openTable(roomId: string) {
-    goto(`/table/${roomId}`);
+  function openTable(tableId: string) {
+    goto(`/table/${tableId}`);
   }
 
-  function createTable(event: SubmitEvent) {
-    if (socket) {
-      const data = extractFormData<{ name: string /*private?: "on"*/ }>(
-        event.target as HTMLFormElement
-      );
-      if (socket.createTable($playerName, data.name)) {
-        openTable("XFSD");
+  async function createTable(event: SubmitEvent) {
+    const currentTable = await socket.getMyTable();
+    if (currentTable) {
+      const leave = confirm(`Leave table ${currentTable.name}`);
+      if (leave) {
+        await socket.leaveTable();
       } else {
-        alert("Error during table creation");
+        return;
       }
+    }
+
+    const data = extractFormData<{ name: string /*private?: "on"*/ }>(
+      event.target as HTMLFormElement
+    );
+    if (await socket.createTable($playerName, data.name)) {
+      const createdTable = await socket.getMyTable();
+      if (!createdTable) {
+        console.error("No created table");
+        return;
+      }
+      openTable(createdTable.id);
+    } else {
+      alert("Error during table creation");
     }
   }
 

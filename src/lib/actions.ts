@@ -8,6 +8,7 @@ export const requestActions = {
   startGame: "START_GAME",
   ping: "PING",
   deleteTable: "DELETE_TABLE",
+  getMyTable: "GET_MY_TABLE",
 } as const;
 
 export const replyActions = {
@@ -29,4 +30,6 @@ export const instantReplyActions = {
   joinTableSuccess: "JOIN_TABLE_SUCCESS",
   joinTableFailure: "JOIN_TABLE_FAILURE",
   pong: "PONG",
+  myTable: "MY_TABLE",
+  noMyTable: "NO_MY_TABLE",
 };
